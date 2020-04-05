@@ -9,6 +9,11 @@ import os
 import hashlib
 import requests
 
+# TODO: parallelizza con ThreadPoolExecutor
+#   guarda https://realpython.com/python-concurrency/#threading-version
+# TODO: invia i siti cambiati via Telegram ad un bot
+# TODO: commenta
+
 
 def open_website(web_site):
     with requests.Session() as session:
@@ -52,4 +57,3 @@ if __name__ == '__main__':
             websites_hashes[website] = new_hash
 
     write_csv_data(file_path, websites_hashes)
-    exit()
