@@ -12,10 +12,11 @@ import requests
 import time
 import argparse
 import telegram
+from bs4 import BeautifulSoup
 
 # TODO: parallelizza con ThreadPoolExecutor
 #   guarda https://realpython.com/python-concurrency/#threading-version
-# TODO: commenta
+# TODO: aggiungi ultima data di modifica
 
 
 def open_website(web_site: str) -> bytes:
@@ -28,6 +29,17 @@ def open_website(web_site: str) -> bytes:
         with session.get(web_site) as response:
             assert type(response.content) == bytes
             return response.content
+
+
+def filter_element(content: bytes, element: str) -> bytes:
+    if not element:
+        return content
+    soup = BeautifulSoup(content, features="html.parser")
+    to_monitor = soup.find(id=element)
+    if to_monitor is None:
+        to_monitor = soup.find(class_=element)
+    assert to_monitor is not None
+    return bytes(str(to_monitor), encoding='utf-8')
 
 
 def get_sha256(byte_string: bytes) -> str:
@@ -49,7 +61,13 @@ def get_csv_data(csv_file_path: str) -> dict:
     """
     with open(csv_file_path, mode='r', encoding='utf=8') as f:
         reader = csv.reader(f)
-        websites_and_hashes = {row[0]: row[1] for row in reader}
+        websites_and_hashes = {
+            row[0]: {
+                'hash': row[1],
+                'element_to_monitor': row[2]
+            }
+            for row in reader
+        }
         return websites_and_hashes
 
 
@@ -62,9 +80,10 @@ def write_csv_data(csv_file_path: str, data: dict) -> None:
     """
     with open(csv_file_path, mode='w', encoding='utf=8', newline='') as f:
         writer = csv.writer(f, delimiter=',')
-        for row in data.items():
-            assert len(row) == 2
-            writer.writerow(row)
+        for url, info in data.items():
+            to_write = [url] + [*info.values()]
+            assert len(to_write) == 3
+            writer.writerow(to_write)
 
 
 if __name__ == '__main__':
@@ -87,28 +106,35 @@ if __name__ == '__main__':
 
     # continue monitoring forever
     while True:
-        websites_hashes = get_csv_data(file_path)
+        websites_data = get_csv_data(file_path)
 
         # list to store changed website to send to the bot
         changed_list = list()
 
-        for website, previous_hash in websites_hashes.items():
+        for website, values in websites_data.items():
             print(f'Checking {website}')
+
+            # get data from the dictionary
+            previous_hash = values['hash']
+            id_to_monitor = values['element_to_monitor']
+
             # access to the website and compute the hash
             byte_response = open_website(website)
-            new_hash = get_sha256(byte_response)
+            element_to_monitor = filter_element(byte_response, id_to_monitor)
+            new_hash = get_sha256(element_to_monitor)
 
             # compare the previous hash with the new one
             if new_hash != previous_hash:
+                print(f'{website} è cambiato!')
                 changed_list.append(f'{website} è cambiato!')
-                websites_hashes[website] = new_hash
+                websites_data[website]['hash'] = new_hash
 
         # changed websites? Notify me via Telegram
         if len(changed_list) != 0:
             bot.send_message(chat_id=chat_id, text='\n\n'.join(changed_list))
 
         # store new data in the .csv file
-        write_csv_data(file_path, websites_hashes)
+        write_csv_data(file_path, websites_data)
 
         print(f'Waiting {wait_time / 3600:.0f} hours')
         time.sleep(wait_time)
