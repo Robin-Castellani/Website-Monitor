@@ -11,8 +11,11 @@ import hashlib
 import requests
 import time
 import argparse
+import datetime
+
 import telegram
 from bs4 import BeautifulSoup
+import pandas as pd
 
 # TODO: parallelizza con ThreadPoolExecutor
 #   guarda https://realpython.com/python-concurrency/#threading-version
@@ -55,16 +58,20 @@ def get_sha256(byte_string: bytes) -> str:
 
 def get_csv_data(csv_file_path: str) -> dict:
     """
-    Open the .csv file and parse the urls and the hashes
+    Open the .csv file and parse the urls and information, such as hash,
+    last visit date and more
     :param csv_file_path: path to the .csv file
-    :return: dictionary {website: hash}
+    :return: dictionary {website: {info1: value1, ...}}
     """
     with open(csv_file_path, mode='r', encoding='utf=8') as f:
         reader = csv.reader(f)
+        # get the first line of the .csv file holding the column names
+        header = next(reader)
+        # populate the dictionary {website: {info1: value1, ...}, ...}
         websites_and_hashes = {
             row[0]: {
-                'hash': row[1],
-                'element_to_monitor': row[2]
+                key: value
+                for key, value in zip(header[1:], row[1:])
             }
             for row in reader
         }
@@ -75,15 +82,13 @@ def write_csv_data(csv_file_path: str, data: dict) -> None:
     """
     Write the data to the .csv file
     :param csv_file_path: path of the .csv file
-    :param data: dictionary {website: hash}
+    :param data: dictionary {website: {info1: value1, ...}}
     :return: None
     """
-    with open(csv_file_path, mode='w', encoding='utf=8', newline='') as f:
-        writer = csv.writer(f, delimiter=',')
-        for url, info in data.items():
-            to_write = [url] + [*info.values()]
-            assert len(to_write) == 3
-            writer.writerow(to_write)
+    # convert the dictionary to a DataFrame to write it easier as a .csv file
+    # transpose the DataFrame to have websites as index
+    df = pd.DataFrame(data).T
+    df.to_csv(csv_file_path, mode='w', encoding='utf=8')
 
 
 if __name__ == '__main__':
@@ -116,7 +121,7 @@ if __name__ == '__main__':
 
             # get data from the dictionary
             previous_hash = values['hash']
-            id_to_monitor = values['element_to_monitor']
+            id_to_monitor = values['filter']
 
             # access to the website and compute the hash
             byte_response = open_website(website)
@@ -126,8 +131,12 @@ if __name__ == '__main__':
             # compare the previous hash with the new one
             if new_hash != previous_hash:
                 print(f'{website} è cambiato!')
+                # add the website to the list for the Telegram notification
                 changed_list.append(f'{website} è cambiato!')
+                # update data to be store into the .csv file
                 websites_data[website]['hash'] = new_hash
+                websites_data[website]['last_change_date'] = \
+                    datetime.datetime.today().strftime('%Y-%m-%d')
 
         # changed websites? Notify me via Telegram
         if len(changed_list) != 0:
