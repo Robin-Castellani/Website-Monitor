@@ -23,7 +23,7 @@ the previous sha256 hash with the current one.
 5. Insert another comma `,`. Here the script will insert the last date
    it has checked the webpage. This is for you, little human!
 
-6. With Telegram ask the `@BotFather` bot to create a new bot for you.
+6. If you want the output to be sent to Telegram, ask the `@BotFather` bot to create a new bot for you.
    Get your token from the chat with `@BotFather`, add your bot 
    to a group and access `https://api.telegram.org/bot<token>/getUpdates` 
    to get your chat id.
@@ -32,9 +32,15 @@ the previous sha256 hash with the current one.
 Open a terminal window (or powershell in Windows) in the repository folder
 (maybe you have to `cd` to your directory) and type:
 ```shell script
-python main.py your_telegram_token your_chat_id
+python main.py
 ```
-remember to replace `your_telegram_token` and `your_chat_id`!
+
+If you want to receive the results to Telegram, 
+run 
+```shell script
+python main.py --token <your_telegram_token> --chat-id <your_chat_id>
+```
+and replace `<your_telegram_token>` and `<your_chat_id>` with the ones from point 6.
 
 ## Caveat
 Some websites use JavaScript to create the webpage using your browser.
