@@ -1,8 +1,10 @@
 """
-Script per monitorare siti web periodicamente
-Il processo di verifica si basa sul confronto dell'hash da sha256
-I siti web vengono letti da file .csv
-Via Telegram si riceve la notifica se i siti sono cambiati
+Script to monitor website changes comparing the sha256 hash of the
+desired portion of the website.
+
+Websites to be monitored are read from a ``.csv`` file.
+
+Any change is sent through Telegram.
 """
 
 import csv
@@ -17,16 +19,16 @@ import telegram
 from bs4 import BeautifulSoup
 import pandas as pd
 
-# TODO: parallelizza con ThreadPoolExecutor
-#   guarda https://realpython.com/python-concurrency/#threading-version
-# TODO: aggiungi ultima data di modifica
+# TODO: parallelize with ThreadPoolExecutor
+#   see https://realpython.com/python-concurrency/#threading-version
 
 
 def open_website(web_site: str) -> bytes:
     """
-    Open a website and return the content as bytes
-    :param web_site: url as string
-    :return: bytes with the HTML content of the webpage
+    Open a website and return the content as bytes.
+
+    :param web_site: url as string.
+    :return: bytes with the HTML content of the webpage.
     """
     with requests.Session() as session:
         with session.get(web_site) as response:
@@ -35,6 +37,15 @@ def open_website(web_site: str) -> bytes:
 
 
 def filter_element(content: bytes, element: str) -> bytes:
+    """
+    Get the desired element (an ``id`` or a ``class`` in the html)
+    or the whole webpage if no element has been selected.
+
+    :param content: raw html.
+    :param element: name of the ``id`` or the ``class`` in the raw html.
+    :return: the raw html associated with ``element``.
+    :raise AssertionError:
+    """
     if not element:
         return content
     soup = BeautifulSoup(content, features="html.parser")
@@ -47,9 +58,10 @@ def filter_element(content: bytes, element: str) -> bytes:
 
 def get_sha256(byte_string: bytes) -> str:
     """
-    Compute the sha256 hash of a bytes string (the HTML content of the webpage)
-    :param byte_string: string of which compute the hash
-    :return: a string with the sha256 hash
+    Compute the sha256 hash of a bytes string (the HTML content of the webpage).
+
+    :param byte_string: string of which compute the hash.
+    :return: a string with the sha256 hash.
     """
     my_hash = hashlib.sha256(byte_string)
     hash_result = my_hash.hexdigest()
@@ -59,9 +71,10 @@ def get_sha256(byte_string: bytes) -> str:
 def get_csv_data(csv_file_path: str) -> dict:
     """
     Open the .csv file and parse the urls and information, such as hash,
-    last visit date and more
-    :param csv_file_path: path to the .csv file
-    :return: dictionary {website: {info1: value1, ...}}
+    last visit date and more.
+
+    :param csv_file_path: path to the .csv file.
+    :return: dictionary ``{website: {info1: value1, ...}}``.
     """
     with open(csv_file_path, mode='r', encoding='utf=8') as f:
         reader = csv.reader(f)
@@ -80,10 +93,11 @@ def get_csv_data(csv_file_path: str) -> dict:
 
 def write_csv_data(csv_file_path: str, data: dict) -> None:
     """
-    Write the data to the .csv file
-    :param csv_file_path: path of the .csv file
-    :param data: dictionary {website: {info1: value1, ...}}
-    :return: None
+    Write the data to the ``.csv`` file.
+
+    :param csv_file_path: path of the .csv file.
+    :param data: dictionary ``{website: {info1: value1, ...}}``.
+    :return: None.
     """
     # convert the dictionary to a DataFrame to write it easier as a .csv file
     # transpose the DataFrame to have websites as index
