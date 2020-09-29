@@ -8,7 +8,7 @@ Any change is sent through Telegram.
 """
 
 import csv
-import os
+import pathlib
 import hashlib
 import requests
 import argparse
@@ -98,7 +98,8 @@ def write_csv_data(csv_file_path: str, data: dict) -> None:
     :param data: dictionary ``{website: {info1: value1, ...}}``.
     :return: None.
     """
-    # convert the dictionary to a DataFrame to write it easier as a .csv file
+    # convert the dictionary to a DataFrame to write it
+    # in an easier way as a .csv file
     # transpose the DataFrame to have websites as index
     df = pd.DataFrame(data).T
     df.to_csv(csv_file_path, mode='w', encoding='utf=8')
@@ -116,8 +117,8 @@ if __name__ == '__main__':
     # instantiate the bot
     bot = telegram.Bot(token=token)
 
-    # define the path of the .csv file
-    file_path = os.path.join(os.curdir, 'websites.csv')
+    # define the path of the .csv file relatively to this script's folder
+    file_path = pathlib.Path(__file__).with_name('websites.csv')
 
     # start monitoring
     websites_data = get_csv_data(file_path)
