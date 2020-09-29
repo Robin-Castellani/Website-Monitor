@@ -68,7 +68,7 @@ def open_website(web_site: str) -> bytes:
     Open a website and return the content as bytes.
 
     :param web_site: url as string.
-    :return: bytes with the HTML content of the webpage.
+    :return: bytes with the HTML content of the web-page.
     """
     with requests.Session() as session:
         with session.get(web_site) as response:
@@ -79,7 +79,7 @@ def open_website(web_site: str) -> bytes:
 def filter_element(content: bytes, element: str) -> bytes:
     """
     Get the desired element (an ``id`` or a ``class`` in the html)
-    or the whole webpage if no element has been selected.
+    or the whole web-page if no element has been selected.
 
     :param content: raw html.
     :param element: name of the ``id`` or the ``class`` in the raw html.
@@ -98,7 +98,8 @@ def filter_element(content: bytes, element: str) -> bytes:
 
 def get_sha256(byte_string: bytes) -> str:
     """
-    Compute the sha256 hash of a bytes string (the HTML content of the webpage).
+    Compute the sha256 hash of a bytes string
+    (which is meant to be the HTML content of the web-page).
 
     :param byte_string: string of which compute the hash.
     :return: a string with the sha256 hash.
