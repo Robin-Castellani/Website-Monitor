@@ -11,7 +11,6 @@ import csv
 import os
 import hashlib
 import requests
-import time
 import argparse
 import datetime
 
@@ -117,47 +116,40 @@ if __name__ == '__main__':
     # instantiate the bot
     bot = telegram.Bot(token=token)
 
-    # define the frequency of the website monitoring
-    wait_time = 60 * 60 * 12
-
     # define the path of the .csv file
     file_path = os.path.join(os.curdir, 'websites.csv')
 
-    # continue monitoring forever
-    while True:
-        websites_data = get_csv_data(file_path)
+    # start monitoring
+    websites_data = get_csv_data(file_path)
 
-        # list to store changed website to send to the bot
-        changed_list = list()
+    # list to store changed website to send to the bot
+    changed_list = list()
 
-        for website, values in websites_data.items():
-            print(f'Checking {website}')
+    for website, values in websites_data.items():
+        print(f'Checking {website}')
 
-            # get data from the dictionary
-            previous_hash = values['hash']
-            id_to_monitor = values['filter']
+        # get data from the dictionary
+        previous_hash = values['hash']
+        id_to_monitor = values['filter']
 
-            # access to the website and compute the hash
-            byte_response = open_website(website)
-            element_to_monitor = filter_element(byte_response, id_to_monitor)
-            new_hash = get_sha256(element_to_monitor)
+        # access to the website and compute the hash
+        byte_response = open_website(website)
+        element_to_monitor = filter_element(byte_response, id_to_monitor)
+        new_hash = get_sha256(element_to_monitor)
 
-            # compare the previous hash with the new one
-            if new_hash != previous_hash:
-                print(f'{website} è cambiato!')
-                # add the website to the list for the Telegram notification
-                changed_list.append(f'{website} è cambiato!')
-                # update data to be store into the .csv file
-                websites_data[website]['hash'] = new_hash
-                websites_data[website]['last_change_date'] = \
-                    datetime.datetime.today().strftime('%Y-%m-%d')
+        # compare the previous hash with the new one
+        if new_hash != previous_hash:
+            print(f'{website} è cambiato!')
+            # add the website to the list for the Telegram notification
+            changed_list.append(f'{website} è cambiato!')
+            # update data to be store into the .csv file
+            websites_data[website]['hash'] = new_hash
+            websites_data[website]['last_change_date'] = \
+                datetime.datetime.today().strftime('%Y-%m-%d')
 
-        # changed websites? Notify me via Telegram
-        if len(changed_list) != 0:
-            bot.send_message(chat_id=chat_id, text='\n\n'.join(changed_list))
+    # changed websites? Notify me via Telegram
+    if len(changed_list) != 0:
+        bot.send_message(chat_id=chat_id, text='\n\n'.join(changed_list))
 
-        # store new data in the .csv file
-        write_csv_data(file_path, websites_data)
-
-        print(f'Waiting {wait_time / 3600:.0f} hours')
-        time.sleep(wait_time)
+    # store new data in the .csv file
+    write_csv_data(file_path, websites_data)
