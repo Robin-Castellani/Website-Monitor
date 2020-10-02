@@ -7,7 +7,6 @@ Websites to be monitored are read from a ``.csv`` file.
 Any change is sent through Telegram.
 """
 
-import csv
 import pathlib
 import hashlib
 import requests
@@ -109,7 +108,7 @@ def get_sha256(byte_string: bytes) -> str:
     return hash_result
 
 
-def get_csv_data(csv_file_path: str) -> dict:
+def get_csv_data(csv_file_path: typing.Union[str, pathlib.Path]) -> dict:
     """
     Open the .csv file and parse the urls and information, such as hash,
     last visit date and more.
@@ -117,19 +116,15 @@ def get_csv_data(csv_file_path: str) -> dict:
     :param csv_file_path: path to the .csv file.
     :return: dictionary ``{website: {info1: value1, ...}}``.
     """
-    with open(csv_file_path, mode='r', encoding='utf=8') as f:
-        reader = csv.reader(f)
-        # get the first line of the .csv file holding the column names
-        header = next(reader)
-        # populate the dictionary {website: {info1: value1, ...}, ...}
-        websites_and_hashes = {
-            row[0]: {
-                key: value
-                for key, value in zip(header[1:], row[1:])
-            }
-            for row in reader
-        }
-        return websites_and_hashes
+    websites_and_hashes = pd.read_csv(
+        csv_file_path,
+        index_col=0,
+    )
+    websites_and_hashes.where(
+        ~pd.isna(websites_and_hashes), None,
+        inplace=True
+    )
+    return websites_and_hashes.to_dict(orient='index')
 
 
 def write_csv_data(csv_file_path: str, data: dict) -> None:
