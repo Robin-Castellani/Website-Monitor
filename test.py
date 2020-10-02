@@ -1,6 +1,8 @@
 import unittest
+from unittest import mock
 import io
 import sys
+
 from main import *
 
 
@@ -88,6 +90,18 @@ class TestGetOutputChannel(unittest.TestCase):
     def test_get_output_channel_no_args(self):
         sys.argv = [sys.argv[0]]
         self.assertIsNone(get_output_channel())
+
+    @mock.patch('sys.stdout', new_callable=io.StringIO)
+    def test_get_output_channel_no_args_print(self, mock_print):
+        sys.argv = [sys.argv[0]]
+        get_output_channel()
+        self.assertEqual(
+            mock_print.getvalue(),
+            '⚠ Telegram token and chat-id '
+            'not passed through the command line\n'
+            '➡ I will print the output to this terminal window\n'
+            '------------\n'
+        )
 
     def test_get_output_channel_args(self):
         fake_token = '0123456789:AAHkOz6994U2SilZ3Z4cba6aZaZabcd38Z8'
