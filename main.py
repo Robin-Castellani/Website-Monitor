@@ -22,7 +22,7 @@ import pandas as pd
 #   see https://realpython.com/python-concurrency/#threading-version
 
 
-def get_output_channel() -> typing.Optional[typing.Tuple[telegram.Bot, str]]:
+def get_output_channel():
     """
     Parse the optional CLI arguments, which consist of the Telegram
     token and the chat-id.
