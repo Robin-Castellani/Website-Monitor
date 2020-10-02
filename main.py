@@ -68,6 +68,7 @@ def open_website(web_site: str) -> bytes:
 
     :param web_site: url as string.
     :return: bytes with the HTML content of the web-page.
+    :raise AssertionError: type of the response content is not bytes.
     """
     with requests.Session() as session:
         with session.get(web_site) as response:
@@ -83,7 +84,8 @@ def filter_element(content: bytes, element: str) -> bytes:
     :param content: raw html.
     :param element: name of the ``id`` or the ``class`` in the raw html.
     :return: the raw html associated with ``element``.
-    :raise AssertionError:
+    :raise AssertionError: the ``element`` is not present
+        in the ``content``.
     """
     if not element:
         return content
