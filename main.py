@@ -115,12 +115,14 @@ def get_csv_data(csv_file_path: typing.Union[str, pathlib.Path]) -> dict:
     Open the .csv file and parse the urls and information, such as hash,
     last visit date and more.
 
+    Skips rows beginning with the ``#`` character.
+
     :param csv_file_path: path to the .csv file.
     :return: dictionary ``{website: {info1: value1, ...}}``.
     """
     websites_and_hashes = pd.read_csv(
         csv_file_path,
-        index_col=0,
+        index_col=0, comment='#',
     )
     websites_and_hashes.where(
         ~pd.isna(websites_and_hashes), None,

@@ -65,6 +65,15 @@ class TestGetCsvData(unittest.TestCase):
             "714120cf1abda6bac178b4e23c9c2fbacc93b87c5b9b560d90af4e9904dc3be4,"
             "col-sm-9,2020-05-21"
         )
+        self.fake_websites_data_comment = io.StringIO(
+            ",hash,filter,last_change_date\n"
+            "#https://apple.com,"
+            "1ec1ea5fa8cd4e378f03dcce8b61667c19bef3343a4160ab122af04fbc7a9f6f,"
+            "page-home ac-nav-overlap,2020-10-01\n"
+            "https://www.provincia.brescia.it/istituzionale/concorsi,"
+            "714120cf1abda6bac178b4e23c9c2fbacc93b87c5b9b560d90af4e9904dc3be4,"
+            "col-sm-9,2020-05-21"
+        )
 
     def test_get_csv_data(self):
         self.assertEqual(
@@ -76,6 +85,19 @@ class TestGetCsvData(unittest.TestCase):
                     'filter': 'page-home ac-nav-overlap',
                     'last_change_date': '2020-10-01',
                 },
+                'https://www.provincia.brescia.it/istituzionale/concorsi': {
+                    'hash': '714120cf1abda6bac178b4e23c9c2fbacc93b87c5'
+                            'b9b560d90af4e9904dc3be4',
+                    'filter': 'col-sm-9',
+                    'last_change_date': '2020-05-21',
+                }
+            }
+        )
+
+    def test_get_csv_data_with_comments(self):
+        self.assertEqual(
+            get_csv_data(self.fake_websites_data_comment),
+            {
                 'https://www.provincia.brescia.it/istituzionale/concorsi': {
                     'hash': '714120cf1abda6bac178b4e23c9c2fbacc93b87c5'
                             'b9b560d90af4e9904dc3be4',
