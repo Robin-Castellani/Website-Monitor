@@ -129,6 +129,33 @@ def get_csv_data(csv_file_path: typing.Union[str, pathlib.Path]) -> dict:
     return websites_and_hashes.to_dict(orient='index')
 
 
+def send_output(
+        list_of_changes: typing.List[str],
+        telegram_output: typing.Optional[tuple]
+) -> None:
+    """
+    Changed websites? Notify me via Telegram or at the terminal!
+
+    :param list_of_changes: list of strings with the messages to send.
+    :param telegram_output: tuple with Telegram token and chat-id or
+        ``None`` to print to the terminal.
+    :return: ``None``.
+    """
+
+    if len(list_of_changes) != 0:
+        if telegram_output is not None:
+            bot = telegram_output[0]
+            chat_id = telegram_output[1]
+            bot.send_message(
+                chat_id=chat_id,
+                text='\n\n'.join(list_of_changes)
+            )
+        else:
+            print('\n------------')
+            print('⏬ Check results ⏬')
+            print('\n\n'.join(list_of_changes))
+
+
 def write_csv_data(csv_file_path: str, data: dict) -> None:
     """
     Write the data to the ``.csv`` file.
@@ -180,17 +207,9 @@ if __name__ == '__main__':
             websites_data[website]['last_change_date'] = \
                 datetime.datetime.today().strftime('%Y-%m-%d')
 
-    # changed websites? Notify me via Telegram or at the terminal
-    if len(changed_list) != 0:
-        if output_channel is not None:
-            output_channel[0].send_message(
-                chat_id=output_channel[1],
-                text='\n\n'.join(changed_list)
-            )
-        else:
-            print('\n------------')
-            print('⏬ Check results ⏬')
-            print('\n\n'.join(changed_list))
+    # send the output (i.e. the list of changed websites) through the
+    # appropriate channel (print to terminal or Telegram chat)
+    send_output(changed_list, output_channel)
 
-        # store new data in the .csv file
-        write_csv_data(file_path, websites_data)
+    # store new data in the .csv file
+    write_csv_data(file_path, websites_data)

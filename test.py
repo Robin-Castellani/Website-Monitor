@@ -116,5 +116,37 @@ class TestGetOutputChannel(unittest.TestCase):
         )
 
 
+class TestSendOutput(unittest.TestCase):
+    @mock.patch('sys.stdout', new_callable=io.StringIO)
+    def test_send_output_to_cli_print(self, mock_print):
+        send_output(['first', 'second'], None)
+        self.assertEqual(
+            mock_print.getvalue(),
+            '\n------------\n'
+            '⏬ Check results ⏬\n'
+            'first\n\n'
+            'second\n'
+        )
+
+    def test_send_output_to_cli_return(self):
+        self.assertIsNone(send_output(['first', 'second'], None))
+
+    @mock.patch('telegram.Bot.send_message')
+    def test_send_output_to_telegram(self, mock_bot):
+        send_output(
+            ['first', 'second'],
+            (
+                telegram.Bot(
+                    token='0123456789:AAHkOz6994U2SilZ3Z4cba6aZaZabcd38Z8'
+                ),
+                'chat_id'
+            )
+        )
+        mock_bot.assert_called_with(
+            chat_id='chat_id',
+            text='\n\n'.join(['first', 'second'])
+        )
+
+
 if __name__ == '__main__':
     unittest.main()
