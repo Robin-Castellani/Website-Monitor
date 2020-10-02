@@ -1,5 +1,6 @@
 import unittest
 import io
+import sys
 from main import *
 
 html_id_class = b'''
@@ -68,6 +69,22 @@ class TestFunctions(unittest.TestCase):
                     'last_change_date': '2020-05-21',
                 }
             }
+        )
+
+    def test_get_output_channel_no_args(self):
+        sys.argv = [sys.argv[0]]
+        self.assertIsNone(get_output_channel())
+
+    def test_get_output_channel_args(self):
+        fake_token = '0123456789:AAHkOz6994U2SilZ3Z4cba6aZaZabcd38Z8'
+        sys.argv.append('-t')
+        sys.argv.append(fake_token)
+        sys.argv.append('-c')
+        sys.argv.append('chat_id')
+        telegram_tuple = get_output_channel()
+        self.assertEqual(
+            telegram_tuple,
+            (telegram.Bot(token=fake_token), 'chat_id')
         )
 
 
