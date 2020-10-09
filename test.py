@@ -3,6 +3,8 @@ from unittest import mock
 import io
 import sys
 
+import responses
+
 from main import *
 
 
@@ -168,6 +170,19 @@ class TestSendOutput(unittest.TestCase):
             chat_id='chat_id',
             text='\n\n'.join(['first', 'second'])
         )
+
+
+class TestOpenWebsite(unittest.TestCase):
+    @responses.activate
+    def test_open_website(self):
+        responses.add(
+            responses.GET, 'http://www.test.com',
+            body=b'Hello world!', status=200
+        )
+
+        response_content = open_website('http://www.test.com')
+
+        self.assertEqual(response_content, b'Hello world!')
 
 
 if __name__ == '__main__':
