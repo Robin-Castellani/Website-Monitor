@@ -173,21 +173,21 @@ def write_csv_data(csv_file_path: str, data: dict) -> None:
     df.to_csv(csv_file_path, mode='w', encoding='utf=8')
 
 
-if __name__ == '__main__':
+def perform_check(websites_info: dict) -> typing.List[str]:
+    """
+    Integrate the functions to check the websites and prepare the
+    strings reporting which website has changed.
 
-    # get the channel (Telegram or terminal) where to send the output
-    output_channel = get_output_channel()
-
-    # define the path of the .csv file relatively to this script's folder
-    file_path = pathlib.Path(__file__).with_name('websites.csv')
-
-    # start monitoring
-    websites_data = get_csv_data(file_path)
+    :param dict websites_info: dictionary like
+        ``{website_url: {hash: ..., changed_date: ...}}``.
+    :return: list of strings of changed websites;
+        strings have to be sent to the output channel.
+    """
 
     # list to store changed website to send to the bot
-    changed_list = list()
+    who_changed_list = list()
 
-    for website, values in websites_data.items():
+    for website, values in websites_info.items():
         print(f'Checking {website}')
 
         # get data from the dictionary
@@ -203,11 +203,27 @@ if __name__ == '__main__':
         if new_hash != previous_hash:
             print(f'{website} changed!')
             # add the website to the list for the Telegram notification
-            changed_list.append(f'{website} changed!')
+            who_changed_list.append(f'{website} changed!')
             # update data to be store into the .csv file
-            websites_data[website]['hash'] = new_hash
-            websites_data[website]['last_change_date'] = \
+            websites_info[website]['hash'] = new_hash
+            websites_info[website]['last_change_date'] = \
                 datetime.datetime.today().strftime('%Y-%m-%d')
+
+    return who_changed_list
+
+
+if __name__ == '__main__':
+
+    # get the channel (Telegram or terminal) where to send the output
+    output_channel = get_output_channel()
+
+    # define the path of the .csv file relatively to this script's folder
+    file_path = pathlib.Path(__file__).with_name('websites.csv')
+
+    # start monitoring
+    websites_data = get_csv_data(file_path)
+
+    changed_list = perform_check(websites_data)
 
     # send the output (i.e. the list of changed websites) through the
     # appropriate channel (print to terminal or Telegram chat)
