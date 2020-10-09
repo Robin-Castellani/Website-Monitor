@@ -28,6 +28,10 @@ the previous sha256 hash with the current one.
    to a group and access `https://api.telegram.org/bot<token>/getUpdates` 
    to get your chat id.
 
+7. If you want to temporary prevent a website from being checked, add
+   a single ``#`` at the very beginning of its line, just before the
+   website url.
+
 ## Use
 Open a terminal window (or powershell in Windows) in the repository folder
 (maybe you have to `cd` to your directory) and type:

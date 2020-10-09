@@ -7,7 +7,6 @@ Websites to be monitored are read from a ``.csv`` file.
 Any change is sent through Telegram.
 """
 
-import csv
 import pathlib
 import hashlib
 import requests
@@ -23,31 +22,23 @@ import pandas as pd
 #   see https://realpython.com/python-concurrency/#threading-version
 
 
-def get_output_channel() -> typing.Optional[typing.Tuple[telegram.Bot, str]]:
+def get_output_channel(cli_args: argparse.Namespace):
     """
-    Parse the optional CLI arguments, which consist of the Telegram
-    token and the chat-id.
+    Use the CLI arguments to select the channel where to redirect the
+    output of the website check.
+
+    If Telegram token and the chat-id are passed in,
+    send a Telegram message.
 
     If no argument is passed, print the output to the command line.
 
+    :param cli_args: arguments parsed with argparse.
     :return: ``None`` if no CLI argument is passed is, otherwise
         the instantiated Telegram bot and the chat-id.
     """
 
-    # first parse the Telegram bot token and the chat id
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        '-t', '--token',
-        required=False, help='Telegram bot token'
-    )
-    parser.add_argument(
-        '-c', '--chat-id', required=False,
-        help='ID of the chat opened with your bot'
-    )
-    args = parser.parse_args()
-
-    telegram_token = args.token
-    telegram_chat_id = args.chat_id
+    telegram_token = cli_args.token
+    telegram_chat_id = cli_args.chat_id
 
     if telegram_token is None or telegram_chat_id is None:
         print(
@@ -69,6 +60,7 @@ def open_website(web_site: str) -> bytes:
 
     :param web_site: url as string.
     :return: bytes with the HTML content of the web-page.
+    :raise AssertionError: type of the response content is not bytes.
     """
     with requests.Session() as session:
         with session.get(web_site) as response:
@@ -84,7 +76,8 @@ def filter_element(content: bytes, element: str) -> bytes:
     :param content: raw html.
     :param element: name of the ``id`` or the ``class`` in the raw html.
     :return: the raw html associated with ``element``.
-    :raise AssertionError:
+    :raise AssertionError: the ``element`` is not present
+        in the ``content``.
     """
     if not element:
         return content
@@ -109,27 +102,52 @@ def get_sha256(byte_string: bytes) -> str:
     return hash_result
 
 
-def get_csv_data(csv_file_path: str) -> dict:
+def get_csv_data(csv_file_path: typing.Union[str, pathlib.Path]) -> dict:
     """
     Open the .csv file and parse the urls and information, such as hash,
     last visit date and more.
 
+    Skips rows beginning with the ``#`` character.
+
     :param csv_file_path: path to the .csv file.
     :return: dictionary ``{website: {info1: value1, ...}}``.
     """
-    with open(csv_file_path, mode='r', encoding='utf=8') as f:
-        reader = csv.reader(f)
-        # get the first line of the .csv file holding the column names
-        header = next(reader)
-        # populate the dictionary {website: {info1: value1, ...}, ...}
-        websites_and_hashes = {
-            row[0]: {
-                key: value
-                for key, value in zip(header[1:], row[1:])
-            }
-            for row in reader
-        }
-        return websites_and_hashes
+    websites_and_hashes = pd.read_csv(
+        csv_file_path,
+        index_col=0, comment='#',
+    )
+    websites_and_hashes.where(
+        ~pd.isna(websites_and_hashes), None,
+        inplace=True
+    )
+    return websites_and_hashes.to_dict(orient='index')
+
+
+def send_output(
+        list_of_changes: typing.List[str],
+        telegram_output: typing.Optional[tuple]
+) -> None:
+    """
+    Changed websites? Notify me via Telegram or at the terminal!
+
+    :param list_of_changes: list of strings with the messages to send.
+    :param telegram_output: tuple with Telegram token and chat-id or
+        ``None`` to print to the terminal.
+    :return: ``None``.
+    """
+
+    if len(list_of_changes) != 0:
+        if telegram_output is not None:
+            bot = telegram_output[0]
+            chat_id = telegram_output[1]
+            bot.send_message(
+                chat_id=chat_id,
+                text='\n\n'.join(list_of_changes)
+            )
+        else:
+            print('\n------------')
+            print('⏬ Check results ⏬')
+            print('\n\n'.join(list_of_changes))
 
 
 def write_csv_data(csv_file_path: str, data: dict) -> None:
@@ -147,21 +165,21 @@ def write_csv_data(csv_file_path: str, data: dict) -> None:
     df.to_csv(csv_file_path, mode='w', encoding='utf=8')
 
 
-if __name__ == '__main__':
+def perform_check(websites_info: dict) -> typing.List[str]:
+    """
+    Integrate the functions to check the websites and prepare the
+    strings reporting which website has changed.
 
-    # get the channel (Telegram or terminal) where to send the output
-    output_channel = get_output_channel()
-
-    # define the path of the .csv file relatively to this script's folder
-    file_path = pathlib.Path(__file__).with_name('websites.csv')
-
-    # start monitoring
-    websites_data = get_csv_data(file_path)
+    :param dict websites_info: dictionary like
+        ``{website_url: {hash: ..., changed_date: ...}}``.
+    :return: list of strings of changed websites;
+        strings have to be sent to the output channel.
+    """
 
     # list to store changed website to send to the bot
-    changed_list = list()
+    who_changed_list = list()
 
-    for website, values in websites_data.items():
+    for website, values in websites_info.items():
         print(f'Checking {website}')
 
         # get data from the dictionary
@@ -177,23 +195,42 @@ if __name__ == '__main__':
         if new_hash != previous_hash:
             print(f'{website} changed!')
             # add the website to the list for the Telegram notification
-            changed_list.append(f'{website} changed!')
+            who_changed_list.append(f'{website} changed!')
             # update data to be store into the .csv file
-            websites_data[website]['hash'] = new_hash
-            websites_data[website]['last_change_date'] = \
+            websites_info[website]['hash'] = new_hash
+            websites_info[website]['last_change_date'] = \
                 datetime.datetime.today().strftime('%Y-%m-%d')
 
-    # changed websites? Notify me via Telegram or at the terminal
-    if len(changed_list) != 0:
-        if output_channel is not None:
-            output_channel[0].send_message(
-                chat_id=output_channel[1],
-                text='\n\n'.join(changed_list)
-            )
-        else:
-            print('\n------------')
-            print('⏬ Check results ⏬')
-            print('\n\n'.join(changed_list))
+    return who_changed_list
 
-        # store new data in the .csv file
-        write_csv_data(file_path, websites_data)
+
+if __name__ == '__main__':
+
+    # get the channel (Telegram or terminal) where to send the output
+    # first parse the Telegram bot token and the chat id
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '-t', '--token',
+        required=False, help='Telegram bot token'
+    )
+    parser.add_argument(
+        '-c', '--chat-id', required=False,
+        help='ID of the chat opened with your bot'
+    )
+    args = parser.parse_args()
+    output_channel = get_output_channel(args)
+
+    # define the path of the .csv file relatively to this script's folder
+    file_path = pathlib.Path(__file__).with_name('websites.csv')
+
+    # start monitoring
+    websites_data = get_csv_data(file_path)
+
+    changed_list = perform_check(websites_data)
+
+    # send the output (i.e. the list of changed websites) through the
+    # appropriate channel (print to terminal or Telegram chat)
+    send_output(changed_list, output_channel)
+
+    # store new data in the .csv file
+    write_csv_data(file_path, websites_data)

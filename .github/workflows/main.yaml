@@ -1,0 +1,32 @@
+name: Test test test!
+
+on:
+  - push
+
+jobs:
+  test:
+    name: Unit and Integration Tests
+
+    runs-on: ubuntu-18.04
+
+    steps:
+      # checks-out current repo under $GITHUB_WORKSPACE
+      - name: Checkout the repo
+        uses: actions/checkout@v2
+
+      # install Python
+      - name: Install Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.8'
+
+      # install requirements
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # run test suite
+      - name: Run test suite
+        run: |
+          python -m unittest
