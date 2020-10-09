@@ -22,31 +22,23 @@ import pandas as pd
 #   see https://realpython.com/python-concurrency/#threading-version
 
 
-def get_output_channel():
+def get_output_channel(cli_args: argparse.Namespace):
     """
-    Parse the optional CLI arguments, which consist of the Telegram
-    token and the chat-id.
+    Use the CLI arguments to select the channel where to redirect the
+    output of the website check.
+
+    If Telegram token and the chat-id are passed in,
+    send a Telegram message.
 
     If no argument is passed, print the output to the command line.
 
+    :param cli_args: arguments parsed with argparse.
     :return: ``None`` if no CLI argument is passed is, otherwise
         the instantiated Telegram bot and the chat-id.
     """
 
-    # first parse the Telegram bot token and the chat id
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        '-t', '--token',
-        required=False, help='Telegram bot token'
-    )
-    parser.add_argument(
-        '-c', '--chat-id', required=False,
-        help='ID of the chat opened with your bot'
-    )
-    args = parser.parse_args()
-
-    telegram_token = args.token
-    telegram_chat_id = args.chat_id
+    telegram_token = cli_args.token
+    telegram_chat_id = cli_args.chat_id
 
     if telegram_token is None or telegram_chat_id is None:
         print(
@@ -215,7 +207,18 @@ def perform_check(websites_info: dict) -> typing.List[str]:
 if __name__ == '__main__':
 
     # get the channel (Telegram or terminal) where to send the output
-    output_channel = get_output_channel()
+    # first parse the Telegram bot token and the chat id
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '-t', '--token',
+        required=False, help='Telegram bot token'
+    )
+    parser.add_argument(
+        '-c', '--chat-id', required=False,
+        help='ID of the chat opened with your bot'
+    )
+    args = parser.parse_args()
+    output_channel = get_output_channel(args)
 
     # define the path of the .csv file relatively to this script's folder
     file_path = pathlib.Path(__file__).with_name('websites.csv')

@@ -112,14 +112,20 @@ class TestGetCsvData(unittest.TestCase):
 
 
 class TestGetOutputChannel(unittest.TestCase):
+    def setUp(self):
+        self.fake_token = '0123456789:AAHkOz6994U2SilZ3Z4cba6aZaZabcd38Z8'
+        self.fake_chat_id = 'chat_id'
+        self.args_telegram = argparse.Namespace(
+            token=self.fake_token, chat_id=self.fake_chat_id
+        )
+        self.args_no_telegram = argparse.Namespace(token=None, chat_id=None)
+
     def test_get_output_channel_no_args(self):
-        sys.argv = [sys.argv[0]]
-        self.assertIsNone(get_output_channel())
+        self.assertIsNone(get_output_channel(self.args_no_telegram))
 
     @mock.patch('sys.stdout', new_callable=io.StringIO)
     def test_get_output_channel_no_args_print(self, mock_print):
-        sys.argv = [sys.argv[0]]
-        get_output_channel()
+        get_output_channel(self.args_no_telegram)
         self.assertEqual(
             mock_print.getvalue(),
             '⚠ Telegram token and chat-id '
@@ -129,15 +135,10 @@ class TestGetOutputChannel(unittest.TestCase):
         )
 
     def test_get_output_channel_args(self):
-        fake_token = '0123456789:AAHkOz6994U2SilZ3Z4cba6aZaZabcd38Z8'
-        sys.argv.append('-t')
-        sys.argv.append(fake_token)
-        sys.argv.append('-c')
-        sys.argv.append('chat_id')
-        telegram_tuple = get_output_channel()
+        telegram_tuple = get_output_channel(self.args_telegram)
         self.assertEqual(
             telegram_tuple,
-            (telegram.Bot(token=fake_token), 'chat_id')
+            (telegram.Bot(token=self.fake_token), 'chat_id')
         )
 
 
