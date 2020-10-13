@@ -3,8 +3,8 @@ Script to check whether a website has changed by comparing
 the previous sha256 hash with the current one.
 
 ## Configuration
-1. Install Python 3.7.7 and every library in `requirements.txt` with
-   `pip install -r requirements.txt`.
+1. Install Python 3.7.7 (or Python 3.8.5) and every library 
+   in `requirements.txt` with `pip install -r requirements.txt`.
 
 2. Websites to be monitored are listed in  `websites.csv`. 
    Write the website you want to monitor here.
@@ -44,7 +44,10 @@ run
 ```shell script
 python main.py --token <your_telegram_token> --chat-id <your_chat_id>
 ```
-and replace `<your_telegram_token>` and `<your_chat_id>` with the ones from point 6.
+and replace `<your_telegram_token>` and `<your_chat_id>` 
+with the ones from point 6.
+
+A [docker](https://www.docker.com/) image is available for Linux.
 
 ## Caveat
 Some websites use JavaScript to create the webpage using your browser.
