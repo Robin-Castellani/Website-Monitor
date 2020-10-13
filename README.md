@@ -23,14 +23,17 @@ the previous sha256 hash with the current one.
 5. Insert another comma `,`. Here the script will insert the last date
    it has checked the webpage. This is for you, little human!
 
-6. If you want the output to be sent to Telegram, ask the `@BotFather` bot to create a new bot for you.
+6. If you want the output to be sent to Telegram, 
+   ask the `@BotFather` bot to create a new bot for you.
    Get your token from the chat with `@BotFather`, add your bot 
    to a group and access `https://api.telegram.org/bot<token>/getUpdates` 
    to get your chat id.
 
 7. If you want to temporary prevent a website from being checked, add
    a single ``#`` at the very beginning of its line, just before the
-   website url.
+   website url. Please, note that the ignored website won't be saved
+   after the next run of the monitoring service, thus is better for you
+   to backup your ``websites.csv`` file.
 
 ## Use
 Open a terminal window (or powershell in Windows) in the repository folder
@@ -48,6 +51,28 @@ and replace `<your_telegram_token>` and `<your_chat_id>`
 with the ones from point 6.
 
 A [docker](https://www.docker.com/) image is available for Linux.
+Assuming you have a standard docker installation, you can run the image
+with these commands:
+```shell script
+# get the image from the GitHub Registry
+sudo docker pull ghcr.io/robin-castellani/website-monitor/website-monitor:0.2
+
+# run it without telegram and printing the output to the terminal (-t)
+sudo docker run -t \
+  ghcr.io/robin-castellani/website-monitor/website-monitor:0.2
+
+# to run it with telegram and without printing the output to the terminal
+#  and without binding the terminal to the container (--detach)
+sudo docker run --detach \
+  ghcr.io/robin-castellani/website-monitor/website-monitor:0.2 \
+  --token <telegram-token> --chat-id <chat-id>
+
+# I suggest to add a --name <container-name> when running the container
+# in this way you can inspect its logs with
+# sudo docker container logs <container-name>
+
+# also, the --rm option remove the container once it has run
+```
 
 ## Caveat
 Some websites use JavaScript to create the webpage using your browser.
