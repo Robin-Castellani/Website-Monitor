@@ -9,6 +9,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 #  to the filesystem of the container at the working directory
 COPY . .
 
-CMD ["python", "./main.py"]
+ENTRYPOINT ["python", "./main.py"]
 
 LABEL org.opencontainers.image.source https://github.com/robin-castellani/website-monitor
