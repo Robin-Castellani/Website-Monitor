@@ -187,7 +187,6 @@ class TestSendOutput(unittest.TestCase):
         send_output(['first', 'second'], None)
         self.assertEqual(
             mock_print.getvalue(),
-            '\n------------\n'
             '⏬ Check results ⏬\n'
             'first\n\n'
             'second\n'

@@ -46,7 +46,10 @@ class TestPerformCheck(unittest.TestCase):
 
     @responses.activate
     def test_output(self):
-        changed = perform_check(copy.deepcopy(self.fake_website_data))
+        changed = perform_check(
+            copy.deepcopy(self.fake_website_data),
+            verbose=False
+        )
 
         self.assertEqual(changed, ["http://www.changed.com changed!"])
 
@@ -54,7 +57,7 @@ class TestPerformCheck(unittest.TestCase):
     def test_changed_dict(self):
         # deepcopy the fake dict to prevent it from being modified
         copy_fake_website_data = copy.deepcopy(self.fake_website_data)
-        perform_check(copy_fake_website_data)
+        perform_check(copy_fake_website_data, verbose=False)
 
         self.assertEqual(
             copy_fake_website_data['http://www.changed.com'],
