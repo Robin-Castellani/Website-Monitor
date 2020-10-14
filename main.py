@@ -102,7 +102,30 @@ def get_sha256(byte_string: bytes) -> str:
     return hash_result
 
 
-def get_csv_data(csv_file_path: typing.Union[str, pathlib.Path]) -> dict:
+def check_file(csv_file_path: pathlib.Path) -> None:
+    """
+    Perform some checks over the passed file.
+
+    :param csv_file_path: path to the .csv file.
+    :return: None
+    :raise FileNotFoundError: the file passed in does not exist.
+    :raise IsADirectoryError: the path points to a directory, not to a file.
+    """
+
+    if not csv_file_path.resolve().exists():
+        raise FileNotFoundError(
+            f'"{csv_file_path}" does not exist\n'
+            f'The full path passed in is "{csv_file_path.resolve()}"'
+        )
+    if not csv_file_path.resolve().is_file():
+        raise IsADirectoryError(
+            f'"{csv_file_path}" points to a directory, not to a file\n'
+            f'The full path passed in is "{csv_file_path.resolve()}"\n'
+            'Pass a formatted properly file (see README for specifications)'
+        )
+
+
+def get_csv_data(csv_file_path: pathlib.Path) -> dict:
     """
     Open the .csv file and parse the urls and information, such as hash,
     last visit date and more.
@@ -121,6 +144,34 @@ def get_csv_data(csv_file_path: typing.Union[str, pathlib.Path]) -> dict:
         inplace=True
     )
     return websites_and_hashes.to_dict(orient='index')
+
+
+def get_commented_data(csv_file_path: pathlib.Path) -> dict:
+    """
+    Read the commented lines in the `csv_file_path` to preserve them
+    and to lately write them at the very end of the csv file.
+
+    :param csv_file_path: path to the .csv file.
+    :return: dictionary ``{website: {info1: value1, ...}}``.
+    """
+
+    with csv_file_path.open('r', encoding='utf-8') as f:
+        header = f.readline().rstrip().lstrip(',').split(',')
+        comments = [
+            line.lstrip('#').rstrip().split(',')
+            for line in f
+            if line.startswith('#')
+        ]
+
+    if not comments:
+        return {}
+    else:
+        comments_dict = {
+            f'#{comment[0]}': dict(zip(header, comment[1:]))
+            for comment in comments
+        }
+
+        return comments_dict
 
 
 def send_output(
@@ -208,7 +259,14 @@ if __name__ == '__main__':
 
     # get the channel (Telegram or terminal) where to send the output
     # first parse the Telegram bot token and the chat id
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        description='Willing to know when a portion of a website has changed? '
+                    'This is the right tool! '
+                    'Just pass the file with the list of websites '
+                    'to be monitored (check out the README before). '
+                    'You can be notified via Telegram '
+                    'or having a look at the terminal ;)'
+    )
     parser.add_argument(
         '-t', '--token',
         required=False, help='Telegram bot token'
@@ -217,14 +275,24 @@ if __name__ == '__main__':
         '-c', '--chat-id', required=False,
         help='ID of the chat opened with your bot'
     )
+    parser.add_argument(
+        'file',
+        type=str,
+        help='file holding data about the websites to monitor; '
+             'can either be a relative or an absolute path; '
+             'see the README to know more about the configuration'
+    )
+
     args = parser.parse_args()
     output_channel = get_output_channel(args)
 
-    # define the path of the .csv file relatively to this script's folder
-    file_path = pathlib.Path(__file__).with_name('websites.csv')
+    # convert the passed file to a Path
+    file_path = pathlib.Path(args.file)
+    check_file(file_path)
 
     # start monitoring
     websites_data = get_csv_data(file_path)
+    commented_websites = get_commented_data(file_path)
 
     changed_list = perform_check(websites_data)
 
@@ -233,4 +301,6 @@ if __name__ == '__main__':
     send_output(changed_list, output_channel)
 
     # store new data in the .csv file
-    write_csv_data(file_path, websites_data)
+    # also, append the commented websites (if present)
+    #  to the updated ones
+    write_csv_data(file_path, {**websites_data, **commented_websites})

@@ -1,4 +1,15 @@
+# virtual environments
 venv*
+
+# PyCharm stuff
 .idea
+
+# coverage output
 .coverage
+
+# Python stuff
 __pycache__
+
+# websites to be monitored
+*.csv
+!example_websites.csv
