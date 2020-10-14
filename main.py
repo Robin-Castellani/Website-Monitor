@@ -102,7 +102,30 @@ def get_sha256(byte_string: bytes) -> str:
     return hash_result
 
 
-def get_csv_data(csv_file_path: typing.Union[str, pathlib.Path]) -> dict:
+def check_file(csv_file_path: pathlib.Path) -> None:
+    """
+    Perform some checks over the passed file.
+
+    :param csv_file_path: path to the .csv file.
+    :return: None
+    :raise FileNotFoundError: the file passed in does not exist.
+    :raise IsADirectoryError: the path points to a directory, not to a file.
+    """
+
+    if not csv_file_path.resolve().exists():
+        raise FileNotFoundError(
+            f'"{csv_file_path}" does not exist\n'
+            f'The full path passed in is "{csv_file_path.resolve()}"'
+        )
+    if not csv_file_path.resolve().is_file():
+        raise IsADirectoryError(
+            f'"{csv_file_path}" points to a directory, not to a file\n'
+            f'The full path passed in is "{csv_file_path.resolve()}"\n'
+            'Pass a formatted properly file (see README for specifications)'
+        )
+
+
+def get_csv_data(csv_file_path: pathlib.Path) -> dict:
     """
     Open the .csv file and parse the urls and information, such as hash,
     last visit date and more.
@@ -208,7 +231,14 @@ if __name__ == '__main__':
 
     # get the channel (Telegram or terminal) where to send the output
     # first parse the Telegram bot token and the chat id
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        description='Willing to know when a portion of a website has changed? '
+                    'This is the right tool! '
+                    'Just pass the file with the list of websites '
+                    'to be monitored (check out the README before). '
+                    'You can be notified via Telegram '
+                    'or having a look at the terminal ;)'
+    )
     parser.add_argument(
         '-t', '--token',
         required=False, help='Telegram bot token'
@@ -217,11 +247,20 @@ if __name__ == '__main__':
         '-c', '--chat-id', required=False,
         help='ID of the chat opened with your bot'
     )
+    parser.add_argument(
+        'file',
+        type=str,
+        help='file holding data about the websites to monitor; '
+             'can either be a relative or an absolute path; '
+             'see the README to know more about the configuration'
+    )
+
     args = parser.parse_args()
     output_channel = get_output_channel(args)
 
-    # define the path of the .csv file relatively to this script's folder
-    file_path = pathlib.Path(__file__).with_name('websites.csv')
+    # convert the passed file to a Path
+    file_path = pathlib.Path(args.file)
+    check_file(file_path)
 
     # start monitoring
     websites_data = get_csv_data(file_path)
