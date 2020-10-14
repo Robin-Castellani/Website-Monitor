@@ -146,6 +146,34 @@ def get_csv_data(csv_file_path: pathlib.Path) -> dict:
     return websites_and_hashes.to_dict(orient='index')
 
 
+def get_commented_data(csv_file_path: pathlib.Path) -> dict:
+    """
+    Read the commented lines in the `csv_file_path` to preserve them
+    and to lately write them at the very end of the csv file.
+
+    :param csv_file_path: path to the .csv file.
+    :return: dictionary ``{website: {info1: value1, ...}}``.
+    """
+
+    with csv_file_path.open('r', encoding='utf-8') as f:
+        header = f.readline().rstrip().lstrip(',').split(',')
+        comments = [
+            line.lstrip('#').rstrip().split(',')
+            for line in f
+            if line.startswith('#')
+        ]
+
+    if not comments:
+        return {}
+    else:
+        comments_dict = {
+            f'#{comment[0]}': dict(zip(header, comment[1:]))
+            for comment in comments
+        }
+
+        return comments_dict
+
+
 def send_output(
         list_of_changes: typing.List[str],
         telegram_output: typing.Optional[tuple]
@@ -264,6 +292,7 @@ if __name__ == '__main__':
 
     # start monitoring
     websites_data = get_csv_data(file_path)
+    commented_websites = get_commented_data(file_path)
 
     changed_list = perform_check(websites_data)
 
@@ -272,4 +301,6 @@ if __name__ == '__main__':
     send_output(changed_list, output_channel)
 
     # store new data in the .csv file
-    write_csv_data(file_path, websites_data)
+    # also, append the commented websites (if present)
+    #  to the updated ones
+    write_csv_data(file_path, {**websites_data, **commented_websites})
