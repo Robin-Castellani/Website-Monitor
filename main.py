@@ -196,7 +196,6 @@ def send_output(
                 text='\n\n'.join(list_of_changes)
             )
         else:
-            print('...\n------------')
             print('⏬ Check results ⏬')
             print('\n\n'.join(list_of_changes))
 
@@ -216,22 +215,27 @@ def write_csv_data(csv_file_path: str, data: dict) -> None:
     df.to_csv(csv_file_path, mode='w', encoding='utf=8')
 
 
-def perform_check(websites_info: dict) -> typing.List[str]:
+def perform_check(websites_info: dict, *, verbose: bool) -> typing.List[str]:
     """
     Integrate the functions to check the websites and prepare the
     strings reporting which website has changed.
 
     :param dict websites_info: dictionary like
         ``{website_url: {hash: ..., changed_date: ...}}``.
+    :param bool verbose: whether to print more output to the CLI.
     :return: list of strings of changed websites;
         strings have to be sent to the output channel.
     """
+
+    # print function more verbose
+    vprint = lambda *arg, **kwarg: print(*arg, **kwarg) if verbose is True \
+        else None
 
     # list to store changed website to send to the bot
     who_changed_list = list()
 
     for website, values in websites_info.items():
-        print(f'Checking {website}')
+        vprint(f'Checking {website}')
 
         # get data from the dictionary
         previous_hash = values['hash']
@@ -244,13 +248,15 @@ def perform_check(websites_info: dict) -> typing.List[str]:
 
         # compare the previous hash with the new one
         if new_hash != previous_hash:
-            print(f'{website} changed!')
+            vprint(f'{website} changed!')
             # add the website to the list for the Telegram notification
             who_changed_list.append(f'{website} changed!')
             # update data to be store into the .csv file
             websites_info[website]['hash'] = new_hash
             websites_info[website]['last_change_date'] = \
                 datetime.datetime.today().strftime('%Y-%m-%d')
+
+        vprint('...\n------------')
 
     return who_changed_list
 
@@ -288,6 +294,11 @@ if __name__ == '__main__':
              'with --repeat-every (-r) argument. Accepts only integers'
     )
     parser.add_argument(
+        '-v', '--verbose',
+        required=False, action='store_true',
+        help='Let the output on the CLI be more verbose...'
+    )
+    parser.add_argument(
         'file',
         type=str,
         help='file holding data about the websites to monitor; '
@@ -314,7 +325,7 @@ if __name__ == '__main__':
         websites_data = get_csv_data(file_path)
         commented_websites = get_commented_data(file_path)
 
-        changed_list = perform_check(websites_data)
+        changed_list = perform_check(websites_data, verbose=args.verbose)
 
         # send the output (i.e. the list of changed websites) through the
         # appropriate channel (print to terminal or Telegram chat)
@@ -344,4 +355,4 @@ if __name__ == '__main__':
                       f' now exit. Bye bye! 👋')
                 break
             # wait...
-            time.sleep(args.repeat_every * 3600)
+            time.sleep(args.repeat_every)
