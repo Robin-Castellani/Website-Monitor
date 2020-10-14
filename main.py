@@ -139,9 +139,8 @@ def get_csv_data(csv_file_path: pathlib.Path) -> dict:
         csv_file_path,
         index_col=0, comment='#',
     )
-    websites_and_hashes.where(
+    websites_and_hashes = websites_and_hashes.where(
         ~pd.isna(websites_and_hashes), None,
-        inplace=True
     )
     return websites_and_hashes.to_dict(orient='index')
 
