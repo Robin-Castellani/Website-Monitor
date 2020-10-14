@@ -4,7 +4,7 @@ desired portion of the website.
 
 Websites to be monitored are read from a ``.csv`` file.
 
-Any change is sent through Telegram.
+Any change is sent through Telegram or is printed in the CLI.
 """
 
 import pathlib
@@ -13,6 +13,7 @@ import requests
 import argparse
 import datetime
 import typing
+import time
 
 import telegram
 from bs4 import BeautifulSoup
@@ -139,9 +140,8 @@ def get_csv_data(csv_file_path: pathlib.Path) -> dict:
         csv_file_path,
         index_col=0, comment='#',
     )
-    websites_and_hashes.where(
+    websites_and_hashes = websites_and_hashes.where(
         ~pd.isna(websites_and_hashes), None,
-        inplace=True
     )
     return websites_and_hashes.to_dict(orient='index')
 
@@ -196,7 +196,6 @@ def send_output(
                 text='\n\n'.join(list_of_changes)
             )
         else:
-            print('\n------------')
             print('⏬ Check results ⏬')
             print('\n\n'.join(list_of_changes))
 
@@ -216,22 +215,27 @@ def write_csv_data(csv_file_path: str, data: dict) -> None:
     df.to_csv(csv_file_path, mode='w', encoding='utf=8')
 
 
-def perform_check(websites_info: dict) -> typing.List[str]:
+def perform_check(websites_info: dict, *, verbose: bool) -> typing.List[str]:
     """
     Integrate the functions to check the websites and prepare the
     strings reporting which website has changed.
 
     :param dict websites_info: dictionary like
         ``{website_url: {hash: ..., changed_date: ...}}``.
+    :param bool verbose: whether to print more output to the CLI.
     :return: list of strings of changed websites;
         strings have to be sent to the output channel.
     """
+
+    # print function more verbose
+    vprint = lambda *arg, **kwarg: print(*arg, **kwarg) if verbose is True \
+        else None
 
     # list to store changed website to send to the bot
     who_changed_list = list()
 
     for website, values in websites_info.items():
-        print(f'Checking {website}')
+        vprint(f'Checking {website}')
 
         # get data from the dictionary
         previous_hash = values['hash']
@@ -244,7 +248,7 @@ def perform_check(websites_info: dict) -> typing.List[str]:
 
         # compare the previous hash with the new one
         if new_hash != previous_hash:
-            print(f'{website} changed!')
+            vprint(f'{website} changed!')
             # add the website to the list for the Telegram notification
             who_changed_list.append(f'{website} changed!')
             # update data to be store into the .csv file
@@ -252,13 +256,14 @@ def perform_check(websites_info: dict) -> typing.List[str]:
             websites_info[website]['last_change_date'] = \
                 datetime.datetime.today().strftime('%Y-%m-%d')
 
+        vprint('...\n------------')
+
     return who_changed_list
 
 
 if __name__ == '__main__':
 
-    # get the channel (Telegram or terminal) where to send the output
-    # first parse the Telegram bot token and the chat id
+    # parse the CLI arguments
     parser = argparse.ArgumentParser(
         description='Willing to know when a portion of a website has changed? '
                     'This is the right tool! '
@@ -276,6 +281,24 @@ if __name__ == '__main__':
         help='ID of the chat opened with your bot'
     )
     parser.add_argument(
+        '-r', '--repeat-every',
+        required=False, type=int,
+        help='Do you want to repeat the monitoring check every X hours? '
+             'Insert the hours you want the script to wait between '
+             'each monitoring check. Accepts only integers'
+    )
+    parser.add_argument(
+        '-m', '--max-repetition',
+        required=False, type=int, default=0,
+        help='Maximum number of monitoring checks. Must be set together '
+             'with --repeat-every (-r) argument. Accepts only integers'
+    )
+    parser.add_argument(
+        '-v', '--verbose',
+        required=False, action='store_true',
+        help='Let the output on the CLI be more verbose...'
+    )
+    parser.add_argument(
         'file',
         type=str,
         help='file holding data about the websites to monitor; '
@@ -284,23 +307,52 @@ if __name__ == '__main__':
     )
 
     args = parser.parse_args()
+    if args.max_repetition and args.repeat_every is None:
+        parser.error('--max-repetition (-m) requires --repeat-every (-r)')
     output_channel = get_output_channel(args)
 
     # convert the passed file to a Path
     file_path = pathlib.Path(args.file)
-    check_file(file_path)
 
-    # start monitoring
-    websites_data = get_csv_data(file_path)
-    commented_websites = get_commented_data(file_path)
+    # count the number of checks performed
+    n_checks = 0
 
-    changed_list = perform_check(websites_data)
+    while True:
+        # check the file at each repetition as it could have been moved
+        check_file(file_path)
 
-    # send the output (i.e. the list of changed websites) through the
-    # appropriate channel (print to terminal or Telegram chat)
-    send_output(changed_list, output_channel)
+        # start monitoring
+        websites_data = get_csv_data(file_path)
+        commented_websites = get_commented_data(file_path)
 
-    # store new data in the .csv file
-    # also, append the commented websites (if present)
-    #  to the updated ones
-    write_csv_data(file_path, {**websites_data, **commented_websites})
+        changed_list = perform_check(websites_data, verbose=args.verbose)
+
+        # send the output (i.e. the list of changed websites) through the
+        # appropriate channel (print to terminal or Telegram chat)
+        send_output(changed_list, output_channel)
+
+        # store new data in the .csv file
+        # also, append the commented websites (if present)
+        #  to the updated ones
+        write_csv_data(file_path, {**websites_data, **commented_websites})
+
+        # wait some hours, if applicable
+        if args.repeat_every:
+            # update the number of checks performed
+            n_checks += 1
+
+            print('...\n...')
+            print('*' * 30)
+            print(f'Performed {n_checks} check(s)')
+            print(f'Now let me sleep {args.repeat_every} hour(s)...')
+            print('*' * 30)
+            print('\n\n')
+            # if the maximum number of repetition has already been done, exit
+            if n_checks >= args.max_repetition:
+                print('*' * 30)
+                print(f'{n_checks} checks have been done, '
+                      f'maximum number of checks is {args.max_repetition},'
+                      f' now exit. Bye bye! 👋')
+                break
+            # wait...
+            time.sleep(args.repeat_every)

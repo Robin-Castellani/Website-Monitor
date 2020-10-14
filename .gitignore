@@ -13,3 +13,4 @@ __pycache__
 # websites to be monitored
 *.csv
 !example_websites.csv
+!Test/*.csv

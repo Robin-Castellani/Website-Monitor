@@ -115,6 +115,30 @@ class TestGetCsvData(unittest.TestCase):
             }
         )
 
+    def test_get_initial_csv_data(self):
+        self.assertEqual(
+            get_csv_data(
+                pathlib.Path(__file__).with_name('website_data_initial.csv')
+            ),
+            {
+                'https://apple.com': {
+                    'hash': None,
+                    'filter': 'test-element',
+                    'last_change_date': None,
+                },
+                'https://www.provincia.brescia.it/istituzionale/concorsi': {
+                    'hash': None,
+                    'filter': None,
+                    'last_change_date': '2020-01-01',
+                },
+                'https://google.com': {
+                    'hash': 'asd00fakehash00lkj',
+                    'filter': None,
+                    'last_change_date': None,
+                }
+            }
+        )
+
 
 class TestCheckFile(unittest.TestCase):
     def test_raise_file_not_found_error(self):
@@ -163,7 +187,6 @@ class TestSendOutput(unittest.TestCase):
         send_output(['first', 'second'], None)
         self.assertEqual(
             mock_print.getvalue(),
-            '\n------------\n'
             '⏬ Check results ⏬\n'
             'first\n\n'
             'second\n'
