@@ -54,13 +54,17 @@ with these commands:
 sudo docker pull ghcr.io/robin-castellani/website-monitor/website-monitor:0.2
 
 # run it without telegram and printing the output to the terminal (-t)
+# assuming you have the <website-file.csv> in <path>, the -v flag 
+#  is needed to map your local path to a path in the container
 sudo docker run -t \
+  -v <path>:<path> \
   ghcr.io/robin-castellani/website-monitor/website-monitor:0.2 \
   <website-file.csv>
 
 # to run it with telegram and without printing the output to the terminal
 #  and without binding the terminal to the container (--detach)
 sudo docker run --detach \
+  -v <path>:<path> \
   ghcr.io/robin-castellani/website-monitor/website-monitor:0.2 \
   --token <telegram-token> --chat-id <chat-id> \
   <website-file.csv>
