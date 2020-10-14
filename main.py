@@ -257,8 +257,7 @@ def perform_check(websites_info: dict) -> typing.List[str]:
 
 if __name__ == '__main__':
 
-    # get the channel (Telegram or terminal) where to send the output
-    # first parse the Telegram bot token and the chat id
+    # parse the CLI arguments
     parser = argparse.ArgumentParser(
         description='Willing to know when a portion of a website has changed? '
                     'This is the right tool! '
@@ -280,7 +279,13 @@ if __name__ == '__main__':
         required=False, type=int,
         help='Do you want to repeat the monitoring check every X hours? '
              'Insert the hours you want the script to wait between '
-             'each monitoring check; accepts only integers'
+             'each monitoring check. Accepts only integers'
+    )
+    parser.add_argument(
+        '-m', '--max-repetition',
+        required=False, type=int, default=0,
+        help='Maximum number of monitoring checks. Must be set together '
+             'with --repeat-every (-r) argument. Accepts only integers'
     )
     parser.add_argument(
         'file',
@@ -291,6 +296,8 @@ if __name__ == '__main__':
     )
 
     args = parser.parse_args()
+    if args.max_repetition and args.repeat_every is None:
+        parser.error('--max-repetition (-m) requires --repeat-every (-r)')
     output_channel = get_output_channel(args)
 
     # convert the passed file to a Path
@@ -329,5 +336,12 @@ if __name__ == '__main__':
             print(f'Now let me sleep {args.repeat_every} hour(s)...')
             print('*' * 30)
             print('\n\n')
+            # if the maximum number of repetition has already been done, exit
+            if n_checks >= args.max_repetition:
+                print('*' * 30)
+                print(f'{n_checks} checks have been done, '
+                      f'maximum number of checks is {args.max_repetition},'
+                      f' now exit. Bye bye! 👋')
+                break
             # wait...
             time.sleep(args.repeat_every * 3600)
