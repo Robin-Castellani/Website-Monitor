@@ -4,7 +4,7 @@ desired portion of the website.
 
 Websites to be monitored are read from a ``.csv`` file.
 
-Any change is sent through Telegram.
+Any change is sent through Telegram or is printed in the CLI.
 """
 
 import pathlib
@@ -13,6 +13,7 @@ import requests
 import argparse
 import datetime
 import typing
+import time
 
 import telegram
 from bs4 import BeautifulSoup
@@ -195,7 +196,7 @@ def send_output(
                 text='\n\n'.join(list_of_changes)
             )
         else:
-            print('\n------------')
+            print('...\n------------')
             print('⏬ Check results ⏬')
             print('\n\n'.join(list_of_changes))
 
@@ -275,6 +276,13 @@ if __name__ == '__main__':
         help='ID of the chat opened with your bot'
     )
     parser.add_argument(
+        '-r', '--repeat-every',
+        required=False, type=int,
+        help='Do you want to repeat the monitoring check every X hours? '
+             'Insert the hours you want the script to wait between '
+             'each monitoring check; accepts only integers'
+    )
+    parser.add_argument(
         'file',
         type=str,
         help='file holding data about the websites to monitor; '
@@ -287,19 +295,39 @@ if __name__ == '__main__':
 
     # convert the passed file to a Path
     file_path = pathlib.Path(args.file)
-    check_file(file_path)
 
-    # start monitoring
-    websites_data = get_csv_data(file_path)
-    commented_websites = get_commented_data(file_path)
+    # count the number of checks performed
+    n_checks = 0
 
-    changed_list = perform_check(websites_data)
+    while True:
+        # check the file at each repetition as it could have been moved
+        check_file(file_path)
 
-    # send the output (i.e. the list of changed websites) through the
-    # appropriate channel (print to terminal or Telegram chat)
-    send_output(changed_list, output_channel)
+        # start monitoring
+        websites_data = get_csv_data(file_path)
+        commented_websites = get_commented_data(file_path)
 
-    # store new data in the .csv file
-    # also, append the commented websites (if present)
-    #  to the updated ones
-    write_csv_data(file_path, {**websites_data, **commented_websites})
+        changed_list = perform_check(websites_data)
+
+        # send the output (i.e. the list of changed websites) through the
+        # appropriate channel (print to terminal or Telegram chat)
+        send_output(changed_list, output_channel)
+
+        # store new data in the .csv file
+        # also, append the commented websites (if present)
+        #  to the updated ones
+        write_csv_data(file_path, {**websites_data, **commented_websites})
+
+        # wait some hours, if applicable
+        if args.repeat_every:
+            # update the number of checks performed
+            n_checks += 1
+
+            print('...\n...')
+            print('*' * 30)
+            print(f'Performed {n_checks} check(s)')
+            print(f'Now let me sleep {args.repeat_every} hour(s)...')
+            print('*' * 30)
+            print('\n\n')
+            # wait...
+            time.sleep(args.repeat_every * 3600)
