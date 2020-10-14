@@ -5,7 +5,7 @@ the previous sha256 hash with the current one.
 ## ⚙️Configuration
 1. Websites to be monitored are listed in a personalised `.csv` file.
    An example of the initial configuration can be found in the file
-   `websites.csv`. Here is the specification of the file:
+   `example_websites.csv`. Here is the specification of the file:
    
    * The first row must be the following:
      ```
@@ -110,6 +110,12 @@ An alternative, which in the real world is never issued by any website host,
 is to use the API which a website exposes and ensures a far more stable
 experience in getting down data. 
 Maybe big recruiting companies have this kind of API!
+
+## ❓ Run the test suite
+For advanced users, it is possible to run the test suite, which
+is located in the `Test` folder. 
+Anyway, it runs at every push at the repository through
+a GitHub Action.
 
 ## 📜 License 
 
