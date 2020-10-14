@@ -55,6 +55,31 @@ class TestFilterElement(unittest.TestCase):
             filter_element(self.fake_html, 'non_existing_id_nor_class')
 
 
+class TestGetCommentedData(unittest.TestCase):
+    def test_no_comment(self):
+        self.assertEqual(
+            get_commented_data(
+                pathlib.Path(__file__).with_name("website_data.csv")
+            ),
+            {}
+        )
+
+    def test_comment(self):
+        self.assertEqual(
+            get_commented_data(
+                pathlib.Path(__file__).with_name("website_data_comment.csv")
+            ),
+            {
+                '#https://apple.com': {
+                    'hash': '1ec1ea5fa8cd4e378f03dcce8b61667c19bef334'
+                            '3a4160ab122af04fbc7a9f6f',
+                    'filter': 'page-home ac-nav-overlap',
+                    'last_change_date': '2020-10-01',
+                }
+            }
+        )
+
+
 class TestGetCsvData(unittest.TestCase):
     def test_get_csv_data(self):
         self.assertEqual(
