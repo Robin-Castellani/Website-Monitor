@@ -91,6 +91,16 @@ class TestGetCsvData(unittest.TestCase):
         )
 
 
+class TestCheckFile(unittest.TestCase):
+    def test_raise_file_not_found_error(self):
+        with self.assertRaises(FileNotFoundError):
+            check_file(pathlib.Path('nonexistentfilepath'))
+
+    def test_raise_is_directory_error(self):
+        with self.assertRaises(IsADirectoryError):
+            check_file(pathlib.Path(__file__).parent)
+
+
 class TestGetOutputChannel(unittest.TestCase):
     def setUp(self):
         self.fake_token = '0123456789:AAHkOz6994U2SilZ3Z4cba6aZaZabcd38Z8'
