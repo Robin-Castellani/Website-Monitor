@@ -98,6 +98,12 @@ python main.py \
 and replace `<telegram-token>` and `<chat-id>` 
 with the ones from point 2.
 
+### 💭 Other options
+- `--repeat-every` (`-r`) to repeat the check every `X` hours of your choice;
+- `--max-repetition` (`-m`), only together with `--repeat-every`,
+  let you limit the maximum number of checks to perform;
+- `--verbose` (`-v`) let you set the verbosity of the output to the CLI.
+
 
 ## ⚠️Caveat
 Some websites use JavaScript to create the webpage using your browser.
