@@ -45,29 +45,35 @@ the previous sha256 hash with the current one.
 ## 🔮 Use
 
 ### 🐳 Docker
-A [docker](https://www.docker.com/) image is available for Linux.
+A [docker](https://docs.docker.com/get-docker/) image is available 
+[here](https://github.com/users/Robin-Castellani/packages?repo_name=Website-Monitor).
+
+I've tested the image on Linux Mint 20, MacOS 10.15 and Windows 10.
+
+**For Windows 10 users** the path must be specified as if it was a Linux path:
+for example: `/c/Users/BigWhale/Desktop` (No `C:\Users\BigWhale\Desktop`).
+
+**For Linux users** probably you already know, but you may need to run
+the commands preceded by a `sudo`.
+
 Assuming you have a standard docker installation, you can run the image
 with these commands:
 ```shell script
 # get the image from the GitHub Registry
-# check the most recent image!
-sudo docker pull ghcr.io/robin-castellani/website-monitor/website-monitor:0.2
+# please, check for the most recent image!
+docker pull ghcr.io/robin-castellani/website-monitor/website-monitor:0.2
 
 # run it without telegram and printing the output to the terminal (-t)
 # assuming you have the <website-file.csv> in <path>, the -v flag 
-#  is needed to map your local path to a path in the container
-# NOTE: on Windows, your local path must follow these rules:
-# - use the lowercase drive letter preceded by a slash /
-# - use slashes, not backslashes (/ ok, \ no!)
-# example: /c/Users/BigWhale/Desktop (No C:\Users\BigWhale\Desktop)
-sudo docker run -t \
+#   is needed to map your local path to a path in the container
+docker run -t \
   -v <path>:<path> \
   ghcr.io/robin-castellani/website-monitor/website-monitor:0.2 \
   <path>/<website-file.csv>
 
 # to run it with telegram and without printing the output to the terminal
 #  and without binding the terminal to the container (--detach)
-sudo docker run --detach \
+docker run --detach \
   -v <path>:<path> \
   ghcr.io/robin-castellani/website-monitor/website-monitor:0.2 \
   --token <telegram-token> --chat-id <chat-id> \
@@ -75,7 +81,7 @@ sudo docker run --detach \
 
 # I suggest to add a --name <container-name> when running the container
 # in this way you can inspect its logs with
-# sudo docker container logs <container-name>
+# docker container logs <container-name>
 
 # also, the --rm option remove the container once it has run
 ```
@@ -87,17 +93,17 @@ sudo docker run --detach \
 2. Open a terminal window (or powershell in Windows) in the repository folder
    (maybe you have to `cd` to your directory) and type:
    ```shell script
-   python main.py <website-file.csv>
+   python main.py <path>/<website-file.csv>
    ```
-   Of course, replace `<website-file.csv>` with the path of the file
-   with the list of websites to monitor.
+   Of course, replace `<path>/<website-file.csv>` with the path and the name
+   of the file with the list of websites to monitor.
 
 If you want to receive the results to Telegram, 
 run 
 ```shell script
 python main.py \
   --token <telegram-token> --chat-id <chat-id> \
-  <website-file.csv>
+  <path>/<website-file.csv>
 ```
 and replace `<telegram-token>` and `<chat-id>` 
 with the ones from point 2.
