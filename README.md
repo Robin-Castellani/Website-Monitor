@@ -56,10 +56,14 @@ sudo docker pull ghcr.io/robin-castellani/website-monitor/website-monitor:0.2
 # run it without telegram and printing the output to the terminal (-t)
 # assuming you have the <website-file.csv> in <path>, the -v flag 
 #  is needed to map your local path to a path in the container
+# NOTE: on Windows, your local path must follow these rules:
+# - use the lowercase drive letter preceded by a slash /
+# - use slashes, not backslashes (/ ok, \ no!)
+# example: /c/Users/BigWhale/Desktop (No C:\Users\BigWhale\Desktop)
 sudo docker run -t \
   -v <path>:<path> \
   ghcr.io/robin-castellani/website-monitor/website-monitor:0.2 \
-  <website-file.csv>
+  <path>/<website-file.csv>
 
 # to run it with telegram and without printing the output to the terminal
 #  and without binding the terminal to the container (--detach)
@@ -67,7 +71,7 @@ sudo docker run --detach \
   -v <path>:<path> \
   ghcr.io/robin-castellani/website-monitor/website-monitor:0.2 \
   --token <telegram-token> --chat-id <chat-id> \
-  <website-file.csv>
+  <path>/<website-file.csv>
 
 # I suggest to add a --name <container-name> when running the container
 # in this way you can inspect its logs with
