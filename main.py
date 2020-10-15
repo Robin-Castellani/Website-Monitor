@@ -336,10 +336,18 @@ if __name__ == '__main__':
         #  to the updated ones
         write_csv_data(file_path, {**websites_data, **commented_websites})
 
+        # update the number of checks performed
+        n_checks += 1
+        # if the maximum number of repetition has already been done, exit
+        if n_checks >= args.max_repetition:
+            print('*' * 30)
+            print(f'{n_checks} checks have been done, '
+                  f'maximum number of checks is {args.max_repetition},'
+                  f' now exit. Bye bye! 👋')
+            break
+            
         # wait some hours, if applicable
         if args.repeat_every:
-            # update the number of checks performed
-            n_checks += 1
 
             print('...\n...')
             print('*' * 30)
@@ -347,12 +355,5 @@ if __name__ == '__main__':
             print(f'Now let me sleep {args.repeat_every} hour(s)...')
             print('*' * 30)
             print('\n\n')
-            # if the maximum number of repetition has already been done, exit
-            if n_checks >= args.max_repetition:
-                print('*' * 30)
-                print(f'{n_checks} checks have been done, '
-                      f'maximum number of checks is {args.max_repetition},'
-                      f' now exit. Bye bye! 👋')
-                break
             # wait...
             time.sleep(args.repeat_every)
