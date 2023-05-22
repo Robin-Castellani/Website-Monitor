@@ -2,5 +2,5 @@ beautifulsoup4==4.9.2
 coverage==5.3
 pandas==1.1.2
 python-telegram-bot==12.5.1
-requests==2.24.0
+requests==2.31.0
 responses==0.12.0
