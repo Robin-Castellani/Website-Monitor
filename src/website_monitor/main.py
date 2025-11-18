@@ -7,17 +7,17 @@ Websites to be monitored are read from a ``.csv`` file.
 Any change is sent through Telegram or is printed in the CLI.
 """
 
-import pathlib
-import hashlib
-import requests
 import argparse
 import datetime
-import typing
+import hashlib
+import pathlib
 import time
+import typing
 
+import pandas as pd
+import requests
 import telegram
 from bs4 import BeautifulSoup
-import pandas as pd
 
 # TODO: parallelize with ThreadPoolExecutor
 #   see https://realpython.com/python-concurrency/#threading-version
@@ -43,9 +43,10 @@ def get_output_channel(cli_args: argparse.Namespace):
 
     if telegram_token is None or telegram_chat_id is None:
         print(
-            '⚠ Telegram token and chat-id not passed through the command line',
-            '➡ I will print the output to this terminal window',
-            sep='\n', end='\n------------\n'
+            "⚠ Telegram token and chat-id not passed through the command line",
+            "➡ I will print the output to this terminal window",
+            sep="\n",
+            end="\n------------\n",
         )
         return
 
@@ -80,14 +81,14 @@ def filter_element(content: bytes, element: str) -> bytes:
     :raise AssertionError: the ``element`` is not present
         in the ``content``.
     """
-    if not element:
+    if pd.isna(element):
         return content
     soup = BeautifulSoup(content, features="html.parser")
     to_monitor = soup.find(id=element)
     if to_monitor is None:
         to_monitor = soup.find(class_=element)
     assert to_monitor is not None
-    return bytes(str(to_monitor), encoding='utf-8')
+    return bytes(str(to_monitor), encoding="utf-8")
 
 
 def get_sha256(byte_string: bytes) -> str:
@@ -122,7 +123,7 @@ def check_file(csv_file_path: pathlib.Path) -> None:
         raise IsADirectoryError(
             f'"{csv_file_path}" points to a directory, not to a file\n'
             f'The full path passed in is "{csv_file_path.resolve()}"\n'
-            'Pass a formatted properly file (see README for specifications)'
+            "Pass a formatted properly file (see README for specifications)"
         )
 
 
@@ -138,12 +139,14 @@ def get_csv_data(csv_file_path: pathlib.Path) -> dict:
     """
     websites_and_hashes = pd.read_csv(
         csv_file_path,
-        index_col=0, comment='#',
+        index_col=0,
+        comment="#",
     )
     websites_and_hashes = websites_and_hashes.where(
-        ~pd.isna(websites_and_hashes), None,
+        ~pd.isna(websites_and_hashes),
+        None,
     )
-    return websites_and_hashes.to_dict(orient='index')
+    return websites_and_hashes.to_dict(orient="index")
 
 
 def get_commented_data(csv_file_path: pathlib.Path) -> dict:
@@ -155,28 +158,24 @@ def get_commented_data(csv_file_path: pathlib.Path) -> dict:
     :return: dictionary ``{website: {info1: value1, ...}}``.
     """
 
-    with csv_file_path.open('r', encoding='utf-8') as f:
-        header = f.readline().rstrip().lstrip(',').split(',')
+    with csv_file_path.open("r", encoding="utf-8") as f:
+        header = f.readline().rstrip().lstrip(",").split(",")
         comments = [
-            line.lstrip('#').rstrip().split(',')
-            for line in f
-            if line.startswith('#')
+            line.lstrip("#").rstrip().split(",") for line in f if line.startswith("#")
         ]
 
     if not comments:
         return {}
     else:
         comments_dict = {
-            f'#{comment[0]}': dict(zip(header, comment[1:]))
-            for comment in comments
+            f"#{comment[0]}": dict(zip(header, comment[1:])) for comment in comments
         }
 
         return comments_dict
 
 
 def send_output(
-        list_of_changes: typing.List[str],
-        telegram_output: typing.Optional[tuple]
+    list_of_changes: typing.List[str], telegram_output: typing.Optional[tuple]
 ) -> None:
     """
     Changed websites? Notify me via Telegram or at the terminal!
@@ -191,13 +190,10 @@ def send_output(
         if telegram_output is not None:
             bot = telegram_output[0]
             chat_id = telegram_output[1]
-            bot.send_message(
-                chat_id=chat_id,
-                text='\n\n'.join(list_of_changes)
-            )
+            bot.send_message(chat_id=chat_id, text="\n\n".join(list_of_changes))
         else:
-            print('⏬ Check results ⏬')
-            print('\n\n'.join(list_of_changes))
+            print("⏬ Check results ⏬")
+            print("\n\n".join(list_of_changes))
 
 
 def write_csv_data(csv_file_path: str, data: dict) -> None:
@@ -212,7 +208,7 @@ def write_csv_data(csv_file_path: str, data: dict) -> None:
     # in an easier way as a .csv file
     # transpose the DataFrame to have websites as index
     df = pd.DataFrame(data).T
-    df.to_csv(csv_file_path, mode='w', encoding='utf=8')
+    df.to_csv(csv_file_path, mode="w", encoding="utf=8")
 
 
 def perform_check(websites_info: dict, *, verbose: bool) -> typing.List[str]:
@@ -228,18 +224,17 @@ def perform_check(websites_info: dict, *, verbose: bool) -> typing.List[str]:
     """
 
     # print function more verbose
-    vprint = lambda *arg, **kwarg: print(*arg, **kwarg) if verbose is True \
-        else None
+    vprint = lambda *arg, **kwarg: print(*arg, **kwarg) if verbose is True else None
 
     # list to store changed website to send to the bot
     who_changed_list = list()
 
     for website, values in websites_info.items():
-        vprint(f'Checking {website}')
+        vprint(f"Checking {website}")
 
         # get data from the dictionary
-        previous_hash = values['hash']
-        id_to_monitor = values['filter']
+        previous_hash = values["hash"]
+        id_to_monitor = values["filter"]
 
         # access to the website and compute the hash
         byte_response = open_website(website)
@@ -248,67 +243,70 @@ def perform_check(websites_info: dict, *, verbose: bool) -> typing.List[str]:
 
         # compare the previous hash with the new one
         if new_hash != previous_hash:
-            vprint(f'{website} changed!')
+            vprint(f"{website} changed!")
             # add the website to the list for the Telegram notification
-            who_changed_list.append(f'{website} changed!')
+            who_changed_list.append(f"{website} changed!")
             # update data to be store into the .csv file
-            websites_info[website]['hash'] = new_hash
-            websites_info[website]['last_change_date'] = \
-                datetime.datetime.today().strftime('%Y-%m-%d')
+            websites_info[website]["hash"] = new_hash
+            websites_info[website]["last_change_date"] = (
+                datetime.datetime.today().strftime("%Y-%m-%d")
+            )
 
-        vprint('...\n------------')
+        vprint("...\n------------")
 
     return who_changed_list
 
 
-if __name__ == '__main__':
-
+def main():
     # parse the CLI arguments
     parser = argparse.ArgumentParser(
-        description='Willing to know when a portion of a website has changed? '
-                    'This is the right tool! '
-                    'Just pass the file with the list of websites '
-                    'to be monitored (check out the README before). '
-                    'You can be notified via Telegram '
-                    'or having a look at the terminal ;)'
+        description="Willing to know when a portion of a website has changed? "
+        "This is the right tool! "
+        "Just pass the file with the list of websites "
+        "to be monitored (check out the README before). "
+        "You can be notified via Telegram "
+        "or having a look at the terminal ;)"
+    )
+    parser.add_argument("-t", "--token", required=False, help="Telegram bot token")
+    parser.add_argument(
+        "-c", "--chat-id", required=False, help="ID of the chat opened with your bot"
     )
     parser.add_argument(
-        '-t', '--token',
-        required=False, help='Telegram bot token'
+        "-r",
+        "--repeat-every",
+        required=False,
+        type=int,
+        help="Do you want to repeat the monitoring check every X hours? "
+        "Insert the hours you want the script to wait between "
+        "each monitoring check. Accepts only integers",
     )
     parser.add_argument(
-        '-c', '--chat-id', required=False,
-        help='ID of the chat opened with your bot'
+        "-m",
+        "--max-repetition",
+        required=False,
+        type=int,
+        default=0,
+        help="Maximum number of monitoring checks. Must be set together "
+        "with --repeat-every (-r) argument. Accepts only integers",
     )
     parser.add_argument(
-        '-r', '--repeat-every',
-        required=False, type=int,
-        help='Do you want to repeat the monitoring check every X hours? '
-             'Insert the hours you want the script to wait between '
-             'each monitoring check. Accepts only integers'
+        "-v",
+        "--verbose",
+        required=False,
+        action="store_true",
+        help="Let the output on the CLI be more verbose...",
     )
     parser.add_argument(
-        '-m', '--max-repetition',
-        required=False, type=int, default=0,
-        help='Maximum number of monitoring checks. Must be set together '
-             'with --repeat-every (-r) argument. Accepts only integers'
-    )
-    parser.add_argument(
-        '-v', '--verbose',
-        required=False, action='store_true',
-        help='Let the output on the CLI be more verbose...'
-    )
-    parser.add_argument(
-        'file',
+        "file",
         type=str,
-        help='file holding data about the websites to monitor; '
-             'can either be a relative or an absolute path; '
-             'see the README to know more about the configuration'
+        help="file holding data about the websites to monitor; "
+        "can either be a relative or an absolute path; "
+        "see the README to know more about the configuration",
     )
 
     args = parser.parse_args()
     if args.max_repetition and args.repeat_every is None:
-        parser.error('--max-repetition (-m) requires --repeat-every (-r)')
+        parser.error("--max-repetition (-m) requires --repeat-every (-r)")
     output_channel = get_output_channel(args)
 
     # convert the passed file to a Path
@@ -340,20 +338,25 @@ if __name__ == '__main__':
         n_checks += 1
         # if the maximum number of repetition has already been done, exit
         if n_checks >= args.max_repetition:
-            print('*' * 30)
-            print(f'{n_checks} checks have been done, '
-                  f'maximum number of checks is {args.max_repetition},'
-                  f' now exit. Bye bye! 👋')
+            print("*" * 30)
+            print(
+                f"{n_checks} checks have been done, "
+                f"maximum number of checks is {args.max_repetition},"
+                f" now exit. Bye bye! 👋"
+            )
             break
-            
+
         # wait some hours, if applicable
         if args.repeat_every:
-
-            print('...\n...')
-            print('*' * 30)
-            print(f'Performed {n_checks} check(s)')
-            print(f'Now let me sleep {args.repeat_every} hour(s)...')
-            print('*' * 30)
-            print('\n\n')
+            print("...\n...")
+            print("*" * 30)
+            print(f"Performed {n_checks} check(s)")
+            print(f"Now let me sleep {args.repeat_every} hour(s)...")
+            print("*" * 30)
+            print("\n\n")
             # wait...
             time.sleep(args.repeat_every)
+
+
+if __name__ == "__main__":
+    main()
