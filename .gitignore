@@ -4,6 +4,9 @@ venv*
 # PyCharm stuff
 .idea
 
+# zed stuff
+.zed
+
 # coverage output
 .coverage
 
